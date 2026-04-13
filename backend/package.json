@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@clerk/clerk-expo": "^2.19.31",
     "@neondatabase/serverless": "^1.0.0",
     "cors": "^2.8.5",
     "cron": "^4.3.0",
