@@ -1,10 +1,11 @@
-import { View, Text, Alert, KeyboardAvoidingView, Platform, ScrollView, TextInput } from "react-native";
+import { View, Text, Alert, KeyboardAvoidingView, Platform, ScrollView, TextInput, TouchableOpacity } from "react-native";
 import {useRouter} from "expo-router";
 import {useSignUp} from "@clerk/expo";
 import {useState } from "react";
 import { authStyles } from "../../assets/styles/auth.styles";
 import { Image } from "expo-image";
 import { COLORS } from "../../constants/colors";
+import { Ionicons } from "@expo/vector-icons";
 
 const SignUpScreen = () => {
 
@@ -86,8 +87,32 @@ if(pendingVerification)
               keyboardType="email-address"
               autoCapitalize="none"
             />
+               <View style={[authStyles.inputContainer, {marginTop: 16}]}>
+              <TextInput 
+                style={authStyles.textInput}
+                 placeholder="Enter password"
+                placeholderTextColor={COLORS.textLight}
+                value={password}
+                onChangeText={setPassword} 
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity
+                style={authStyles.eyeButton}
+                onPress={()=> setShowPassword(!showPassword)}
+              >
+                <Ionicons 
+                  name={showPassword ? "eye-outline" : "eye-off-outline"}
+                  size={20}
+                  color={COLORS.textLight}
+                />
+              </TouchableOpacity>
+
+            </View>
           </View>
 
+          {/* PASSWORD INPUT */}
+         
           
         </ScrollView>
 
