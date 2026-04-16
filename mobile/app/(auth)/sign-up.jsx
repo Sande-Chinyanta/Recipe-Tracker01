@@ -1,125 +1,164 @@
-import { View, Text, Alert, KeyboardAvoidingView, Platform, ScrollView, TextInput, TouchableOpacity } from "react-native";
-import {useRouter} from "expo-router";
-import {useSignUp} from "@clerk/expo";
-import {useState } from "react";
+import {
+  View,
+  Text,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+} from "react-native";
+import { useRouter } from "expo-router";
+import { useSignUp } from "@clerk/expo";
+import { useState } from "react";
 import { authStyles } from "../../assets/styles/auth.styles";
 import { Image } from "expo-image";
 import { COLORS } from "../../constants/colors";
+
 import { Ionicons } from "@expo/vector-icons";
+import VerifyEmail from "./verify-email";
+import { ActivityIndicator } from "react-native";
 
 const SignUpScreen = () => {
+  const router = useRouter();
+  const { isLoaded, signUp } = useSignUp();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [pendingVerification, setPendingVerification] = useState(false);
 
-const router = useRouter();
-const { isLoaded, signUp, setActive } = useSignUp();
-const [ email, setEmail ] = useState("");
-const [ password, setPassword ] = useState("");
-const [ showPassword, setShowPassword ] = useState(false);  
-const [ loading, setLoading ] = useState(false);
-const [pendingVerification, setPendingVerification] = useState();
+  const handleSignUp = async () => {
+  console.log("Sign Up button pressed");
 
-
-const handleSignUp = async () => {
-  if (!email || !password) {return Alert.alert("Error", "Please fill in all fields");
+  if (!email || !password) {
+    return Alert.alert("Error", "Please fill in all fields");
   }
-  if(password.length < 6 ) { return Alert.alert("Error", "Password must be atleast 6 characters");
+
+  if (password.length < 6) {
+    return Alert.alert("Error", "Password must be at least 6 characters");
   }
 
-  if(!isLoaded) return; 
+  if (!isLoaded) {
+    console.log("Clerk not loaded yet");
+    return Alert.alert("Authentication is still loading. Please try again.");
+  }
 
   setLoading(true);
 
   try {
+    console.log("Creating account for:", email);
 
-    await signUp.create({emailAddress:email, password});
+    await signUp.create({
+      emailAddress: email.trim(),
+      password: password.trim(),
+    });
 
-    await signUp.prepareEmailAddressVerification({strategy: "email_code"});
+    console.log("User created successfully");
+
+    await signUp.prepareEmailAddressVerification({
+      strategy: "email_code",
+    });
+
+    console.log("Verification email sent");
 
     setPendingVerification(true);
-    
   } catch (err) {
-      Alert.alert("Error", err.errors?.[0]?.message || "Failed to create account");
-     console.error(JSON.stringify(err, null, 2));
-    
-  } finally{
+    console.error("Signup Error:", JSON.stringify(err, null, 2));
+    Alert.alert(
+      "Error",
+      err?.errors?.[0]?.longMessage ||
+        err?.errors?.[0]?.message ||
+        "Failed to create account"
+    );
+  } finally {
     setLoading(false);
   }
 };
-
-if(pendingVerification)
-   return (
-    <View>
-    <Text>"pending ui will go here";</Text>;
-    </View>
-   );
-  
+  if (pendingVerification)
+    return <VerifyEmail email={email} onBack={() => setPendingVerification(false)} />;
 
   return (
     <View style={authStyles.container}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "android" ? 64 : 0}
+        behavior={Platform.OS === "android" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "android" ? 64 : 0}
         style={authStyles.keyboardView}
       >
-
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={authStyles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* IMAGE CONTAINER */}
+          {/* Image Container */}
           <View style={authStyles.imageContainer}>
-
-              <Image 
-                source={require("../../assets/images/i2.png")}
-                style={authStyles.image}
-                content="contain"
-              />
+            <Image
+              source={require("../../assets/images/i2.png")}
+              style={authStyles.image}
+              contentFit="contain"
+            />
           </View>
 
           <Text style={authStyles.title}>Create Account</Text>
 
           <View style={authStyles.formContainer}>
-            {/* EMAIL INPUT */}
-            <TextInput
-              style={authStyles.textInput}
-              placeholder="Enter email"
-              placeholderTextColor={COLORS.textLight}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-               <View style={[authStyles.inputContainer, {marginTop: 16}]}>
-              <TextInput 
+            {/* Email Input */}
+            <View style={authStyles.inputContainer}>
+              <TextInput
                 style={authStyles.textInput}
-                 placeholder="Enter password"
+                placeholder="Enter email"
+                placeholderTextColor={COLORS.textLight}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+
+            {/* Password Input */}
+            <View style={authStyles.inputContainer}>
+              <TextInput
+                style={authStyles.textInput}
+                placeholder="Enter password"
                 placeholderTextColor={COLORS.textLight}
                 value={password}
-                onChangeText={setPassword} 
+                onChangeText={setPassword}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
               />
               <TouchableOpacity
                 style={authStyles.eyeButton}
-                onPress={()=> setShowPassword(!showPassword)}
+                onPress={() => setShowPassword(!showPassword)}
               >
-                <Ionicons 
+                <Ionicons
                   name={showPassword ? "eye-outline" : "eye-off-outline"}
                   size={20}
                   color={COLORS.textLight}
                 />
               </TouchableOpacity>
-
             </View>
+
+            {/* Sign Up Button */}
+            <TouchableOpacity
+              style={[authStyles.authButton, loading && authStyles.buttonDisabled]}
+              onPress={handleSignUp}
+              disabled={loading}
+              activeOpacity={0.8}
+            >
+              <Text style={authStyles.buttonText}>
+                {loading ? "Creating Account..." : "Sign Up"}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Sign In Link */}
+            <TouchableOpacity style={authStyles.linkContainer} onPress={() => router.back()}>
+              <Text style={authStyles.linkText}>
+                Already have an account? <Text style={authStyles.link}>Sign In</Text>
+              </Text>
+            </TouchableOpacity>
           </View>
-
-          {/* PASSWORD INPUT */}
-         
-          
         </ScrollView>
-
-    
       </KeyboardAvoidingView>
     </View>
   );
 };
-
 export default SignUpScreen;

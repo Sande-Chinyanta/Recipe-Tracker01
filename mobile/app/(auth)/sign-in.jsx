@@ -59,7 +59,7 @@ import { Ionicons } from "@expo/vector-icons";
   return (
     <View style={authStyles.container} >
       <KeyboardAvoidingView 
-        behavior={Platform.OS === "ios" ? "padding" : "height"} 
+        behavior={Platform.OS === "android" ? "padding" : "height"} 
         style={authStyles.keyboardView}
         keyboardVerticalOffset={Platform.OS === "android" ? 64 : 0}
       >
