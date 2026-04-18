@@ -7,6 +7,7 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSignUp } from "@clerk/expo";
@@ -14,14 +15,12 @@ import { useState } from "react";
 import { authStyles } from "../../assets/styles/auth.styles";
 import { Image } from "expo-image";
 import { COLORS } from "../../constants/colors";
-
 import { Ionicons } from "@expo/vector-icons";
 import VerifyEmail from "./verify-email";
-import { ActivityIndicator } from "react-native";
 
 const SignUpScreen = () => {
   const router = useRouter();
-  const { isLoaded, signUp } = useSignUp();
+  const { signUp, setActive } = useSignUp();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -29,67 +28,56 @@ const SignUpScreen = () => {
   const [pendingVerification, setPendingVerification] = useState(false);
 
   const handleSignUp = async () => {
-  console.log("Sign Up button pressed");
-
-  if (!email || !password) {
-    return Alert.alert("Error", "Please fill in all fields");
-  }
-
-  if (password.length < 6) {
-    return Alert.alert("Error", "Password must be at least 6 characters");
-  }
-
-  if (!isLoaded) {
-    console.log("Clerk not loaded yet");
-    return Alert.alert("Authentication is still loading. Please try again.");
-  }
+  if (!email || !password) return Alert.alert("Error", "Please fill in all fields");
+  if (password.length < 6) return Alert.alert("Error", "Password must be at least 6 characters");
+  if (!signUp) return Alert.alert("Error", "Still loading, please try again");
 
   setLoading(true);
 
   try {
-    console.log("Creating account for:", email);
-
-    await signUp.create({
+    const { error } = await signUp.password({
       emailAddress: email.trim(),
       password: password.trim(),
     });
 
-    console.log("User created successfully");
+    if (error) {
+      Alert.alert("Error", error.message || "Failed to create account");
+      return;
+    }
 
-    await signUp.prepareEmailAddressVerification({
-      strategy: "email_code",
-    });
-
+    await signUp.verifications.sendEmailCode();
     console.log("Verification email sent");
-
     setPendingVerification(true);
+
   } catch (err) {
-    console.error("Signup Error:", JSON.stringify(err, null, 2));
-    Alert.alert(
-      "Error",
-      err?.errors?.[0]?.longMessage ||
-        err?.errors?.[0]?.message ||
-        "Failed to create account"
-    );
+    Alert.alert("Error", err?.message || "Failed to create account");
+    console.error(err);
   } finally {
     setLoading(false);
   }
 };
-  if (pendingVerification)
-    return <VerifyEmail email={email} onBack={() => setPendingVerification(false)} />;
+
+  if (pendingVerification) {
+    return (
+      <VerifyEmail
+        email={email}
+        onBack={() => setPendingVerification(false)}
+      />
+    );
+  }
 
   return (
     <View style={authStyles.container}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "android" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "android" ? 64 : 0}
         style={authStyles.keyboardView}
       >
         <ScrollView
           contentContainerStyle={authStyles.scrollContent}
+          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Image Container */}
           <View style={authStyles.imageContainer}>
             <Image
               source={require("../../assets/images/i2.png")}
@@ -101,7 +89,6 @@ const SignUpScreen = () => {
           <Text style={authStyles.title}>Create Account</Text>
 
           <View style={authStyles.formContainer}>
-            {/* Email Input */}
             <View style={authStyles.inputContainer}>
               <TextInput
                 style={authStyles.textInput}
@@ -114,7 +101,6 @@ const SignUpScreen = () => {
               />
             </View>
 
-            {/* Password Input */}
             <View style={authStyles.inputContainer}>
               <TextInput
                 style={authStyles.textInput}
@@ -137,22 +123,26 @@ const SignUpScreen = () => {
               </TouchableOpacity>
             </View>
 
-            {/* Sign Up Button */}
             <TouchableOpacity
               style={[authStyles.authButton, loading && authStyles.buttonDisabled]}
               onPress={handleSignUp}
               disabled={loading}
               activeOpacity={0.8}
             >
-              <Text style={authStyles.buttonText}>
-                {loading ? "Creating Account..." : "Sign Up"}
-              </Text>
+              {loading ? (
+                <ActivityIndicator color={COLORS.white} />
+              ) : (
+                <Text style={authStyles.buttonText}>Sign Up</Text>
+              )}
             </TouchableOpacity>
 
-            {/* Sign In Link */}
-            <TouchableOpacity style={authStyles.linkContainer} onPress={() => router.back()}>
+            <TouchableOpacity
+              style={authStyles.linkContainer}
+              onPress={() => router.back()}
+            >
               <Text style={authStyles.linkText}>
-                Already have an account? <Text style={authStyles.link}>Sign In</Text>
+                Already have an account?{" "}
+                <Text style={authStyles.link}>Sign In</Text>
               </Text>
             </TouchableOpacity>
           </View>
@@ -161,4 +151,5 @@ const SignUpScreen = () => {
     </View>
   );
 };
+
 export default SignUpScreen;
