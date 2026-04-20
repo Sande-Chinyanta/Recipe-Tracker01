@@ -8,7 +8,7 @@ export default function AuthRoutesLayout() {
     return null 
   }
 
-  if (isSignedIn) return <Redirect href={'/home'} />;
+  if (isSignedIn) return <Redirect href={"/home"} />;
 
   return <Stack  screenOptions={{headerShown: false}}/>;
 }
