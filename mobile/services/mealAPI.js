@@ -1,4 +1,4 @@
-const BASE_URL =  "https://www.themealdb,com/api/json/v1/1";
+const BASE_URL =  "https://www.themealdb.com/api/json/v1/1";
 
 export const MealAPI = {
     // search meal by name
@@ -35,7 +35,7 @@ export const MealAPI = {
     },
     getRandomMeals: async (count = 6) => {
         try {
-            const promises = array(count)
+            const promises = Array(count)
             .fill()
             .map(() => MealAPI.getRandomMeal());
             const meals = await Promise.all(promises);
@@ -61,18 +61,53 @@ export const MealAPI = {
             const data = await response.json();
             return data.meals || [];
         } catch (error) {
-            console.error("Error getting meal by id:", error);
+            console.error("Error filtering by ingredients:", error);
             return [];
         }
     },
-    filterByCategorie: async (category) => {
+    filterByCategory: async (category) => {
         try {
-            const response = await fetch(`${BASE_URL}/filter.php?c=${encodeURIComponent(ingredient)}`);
+            const response = await fetch(`${BASE_URL}/filter.php?c=${encodeURIComponent(category)}`);
             const data = await response.json();
             return data.meals || [];
         } catch (error) {
-            console.error("Error getting meal by id:", error);
+            console.error("Error filtering by category:", error);
             return [];
         }
+    },
+
+    // transform mealldb data to app data format
+    transformMealData: (meal) => {
+        if (!meal) return;
+
+        const ingredients = [];
+        for (let i = 1; i <= 20; i++) {
+            const ingredient = meal[`strIngredient${i}`];
+            const measure = meal[`strMeasure${i}`];
+            if (ingredient && ingredient.trim()) {
+                const measureText = measure && measure.trim() ? `${measure.trim()} ` : "";
+                ingredients.push(`${measureText}${ingredient.trim()}`);
+            }
+        }
+
+        const instructions = meal.strInstructions
+            ? meal.strInstructions.split(/\r?\n/).filter((step) => step.trim())
+            : [];
+
+        return {
+            id: meal.idMeal,
+            title: meal.strMeal,
+            description: meal.strInstructions
+                ? meal.strInstructions.substring(0, 120) + "..."
+                : "Delicious meal from TheMealDB",
+            image: meal.strMealThumb,
+            cookTime: "30 minutes",
+            servings: 4,
+            category: meal.strCategory || "Main Course",
+            area: meal.strArea,
+            ingredients,
+            instructions,
+            originalData: meal,  
+        };    
     },
 }; 
